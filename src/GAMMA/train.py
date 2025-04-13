@@ -73,7 +73,7 @@ def train_model(model_defs, input_arg, map_cstr=None, chkpt_file='./chkpt'):
         best_sol = chkpt["best_sol"]
         best_runtime, best_throughput, best_energy, best_area, best_l1_size, best_l2_size, best_mac, best_power, best_num_pe = env.get_indiv_info(best_sol, num_pe=None)
         print("Mapping:", chkpt["best_sol"])
-        print(f"Reward: {chkpt['best_reward'][0]:.3e}, Runtime: {best_runtime:.0f}(cycles), Area: {best_area/1e6:.3f}(mm2), PE Area_ratio: {best_num_pe*MAC_AREA_INT8/best_area*100:.1f}%, Num_PE: {best_num_pe:.0f}, L1 Buffer: {best_l1_size:.0f}(elements), L2 Buffer: {best_l2_size:.0f}(elements)")
+        print(f"Reward: {chkpt['best_reward'][0]:.3e}, Runtime: {best_runtime:.0f}(cycles), Area: {best_area/1e6:.3f}(mm2), Energy: {best_energy:.3e} nJ,  PE Area_ratio: {best_num_pe*MAC_AREA_INT8/best_area*100:.1f}%, Num_PE: {best_num_pe:.0f}, L1 Buffer: {best_l1_size:.0f}(elements), L2 Buffer: {best_l2_size:.0f}(elements)")
         chkpt = {
             "reward":chkpt['best_reward'][0],
             "best_sol":best_sol,
@@ -101,4 +101,5 @@ def get_cstr_name(mapping_cstr):
         cstr_name = "free"
     return cstr_name
 
+# def train_model
 

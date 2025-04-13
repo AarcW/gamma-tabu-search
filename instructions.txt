@@ -1,0 +1,3 @@
+conda activate gammaEnv
+./run_gamma.sh
+

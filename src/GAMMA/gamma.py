@@ -950,9 +950,13 @@ class GAMMA(object):
             os.remove("./{}.csv".format(m_file))  if os.path.exists("./{}.csv".format(m_file)) else None
             os.remove("./log.txt") if os.path.exists("./log.txt") else None
             if self.external_area_model:
+                # print("External area model")
                 area = self.compute_area_external(to_use_num_pe, l1_size, l2_size)
             elif self.area_pebuf_only:
+                # print("Area model with only PE and buffer")
                 area = self.compute_area_maestro(to_use_num_pe, l1_size, l2_size)
+            # else:
+                # print("No change to area")
 
             self.observation = [np.mean(x) for x in [runtime, throughput, energy, area, l1_size, l2_size, mac, power, to_use_num_pe]]
             def catch_exception():
