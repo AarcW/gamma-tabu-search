@@ -84,7 +84,7 @@ def train_model(model_defs, input_arg, map_cstr=None, chkpt_file='./chkpt'):
     best_overall_solution = None
     best_runtime = best_energy = best_area = best_l1 = best_l2 = best_pe = best_pe_ratio = None
     print(f"num_pe: {opt.num_pe}, l1_size: {opt.l1_size}, l2_size: {opt.l2_size}")
-    for i in range(100):
+    for i in range(min(1000,max(100,opt.epochs))):
         try:
             # Generate initial solution
             initial_solution = env.create_genome_fixedSL()
