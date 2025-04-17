@@ -1203,7 +1203,7 @@ class GAMMA(object):
         best_reward = self.oberserve_maestro(initial_solution)[0]
         current_solution = initial_solution
         tabu_list = []
-        
+        count=0
         for iteration in range(max_iterations):
             neighbors = self.generate_neighbors(current_solution)
             valid_neighbors = []
@@ -1241,6 +1241,12 @@ class GAMMA(object):
             if reward[0] > best_reward[0]:
                 best_solution = copy.deepcopy(current_solution)
                 best_reward = reward
+                count=0
+            else :
+                count+=1
+                if count>=50:
+                    print("No improvement in 50 iterations, stopping")
+                    break
             
             # Logging
             if self.log_level > 1:
