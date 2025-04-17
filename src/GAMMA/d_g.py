@@ -906,13 +906,9 @@ class GAMMA(object):
                 dram_accesses * dram_energy)
         return total  # Returns energy in nJ (since inputs are in pJ)
 
-    def oberserve_maestro(self, indv, num_pe=168, l1_size=None, l2_size=None, NocBW=None, offchipBW=None):
+    def oberserve_maestro(self, indv, num_pe=None, l1_size=None, l2_size=None, NocBW=None, offchipBW=None):
 
-        # Add debug logging BEFORE maestro call
-        print(f"\n[DEBUG] MAESTRO INPUT:")
-        print(f"- PE Count: {num_pe}")
-        print(f"- L1 Size: {self.l1_size} elements")
-        print(f"- L2 Size: {self.l2_size} elements")
+        
 
         m_file = "{}".format(random.randint(0, 2**32))
         self.write_maestro(indv,m_file=m_file)
@@ -922,6 +918,13 @@ class GAMMA(object):
             to_use_num_pe = indv[0][1]
         else:
             to_use_num_pe = self.num_pe
+        
+        if self.log_level>0:
+            # Add debug logging BEFORE maestro call
+            print(f"\n[DEBUG] MAESTRO INPUT:")
+            print(f"- PE Count: {to_use_num_pe}")
+            print(f"- L1 Size: {self.l1_size} elements")
+            print(f"- L2 Size: {self.l2_size} elements")
         # print(num_pe, bw, l1_size)
         os.remove("./{}.csv".format(m_file)) if os.path.exists("./{}.csv".format(m_file)) else None
         command = [self._executable,
@@ -998,9 +1001,9 @@ class GAMMA(object):
             stdout_as_str = stdout.decode("utf-8")
             stdout_as_str = "".join(stdout_as_str.split())
             # Add validation AFTER results
-            if runtime < 1000:  # Absolute minimum sanity check
-                print(f"INVALID RUNTIME {runtime} - Discarding solution")
-                return None, None
+            # if runtime < 1000:  # Absolute minimum sanity check
+            #     print(f"INVALID RUNTIME {runtime} - Discarding solution")
+            #     return None, None
             # if (len(str(stdout))>3 and stdout_as_str[:len("Numpartialsumsislessthan0!")]!="Numpartialsumsislessthan0!") or catch_exception() or not self.validTo_external_mem_cstr(indv, num_pe=to_use_num_pe):
             # if len(str(stdout))>3  or catch_exception() or not self.validTo_external_mem_cstr(indv, num_pe=to_use_num_pe):
             if  catch_exception() or not self.validTo_external_mem_cstr(indv, num_pe=to_use_num_pe):
@@ -1049,7 +1052,8 @@ class GAMMA(object):
         # Debug outputs
         # print(f"[DEBUG] PE area: {pe_area} µm²")
         # print(f"[DEBUG] Buffer area: {buf_area} µm²")
-        print(f"[DEBUG] l1_size={l1_size}, l2_size={l2_size}, Total area: {total_area} µm²")
+        if self.log_level>0:
+            print(f"[DEBUG] l1_size={l1_size}, l2_size={l2_size}, Total area: {total_area} µm²")
 
         return total_area
 

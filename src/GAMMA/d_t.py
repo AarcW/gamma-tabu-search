@@ -94,6 +94,10 @@ def train_model(model_defs, input_arg, map_cstr=None, chkpt_file='./chkpt'):
             if not env.validTo_external_mem_cstr(initial_solution, num_pe=opt.num_pe):
                 print(f"Attempt {i+1}: Invalid initial solution, skipping...")
                 continue
+            runtime, _, energy, area, l1_size, l2_size, _, _, num_pe = env.get_indiv_info(initial_solution)
+
+            print(f"Generated Valid Initial Solution: {initial_solution}")
+            print(f"Iteration {i} Initial solution \nnum_pe: {num_pe}, l1_size: {l1_size}, l2_size: {l2_size}")
 
             # Run Tabu Search
             pool = Pool(cpu_count())
@@ -107,20 +111,25 @@ def train_model(model_defs, input_arg, map_cstr=None, chkpt_file='./chkpt'):
 
             # Get metrics for current solution
             runtime, _, energy, area, l1_size, l2_size, _, _, num_pe = env.get_indiv_info(current_solution)
+            print(f"Iteration {i} num_pe: {num_pe}, l1_size: {l1_size}, l2_size: {l2_size}")
             pe_area = num_pe * MAC_AREA_INT8
             pe_area_ratio = (pe_area / area) * 100
             # Add POST-SEARCH VALIDATION
             if not env.validTo_external_mem_cstr(current_solution):
                 print("Tabu Search produced invalid solution!")
                 continue  # Skip to next iteration
-
+            
+            
             # Add theoretical minimum cycle check
             min_cycles = (dimension[0]*dimension[1]*dimension[4]*dimension[5])/opt.num_pe
             if runtime < min_cycles:
                 print(f"Impossible runtime: {runtime} < {min_cycles}")
                 continue
-
+            print(f"Valid cycles")
             # Update best solution if improved
+            if current_reward is None:
+                print("No reward returned from Tabu Search")
+                continue
             if current_reward[0] > best_overall_reward:
                 best_overall_reward = current_reward[0]
                 best_overall_solution = current_solution
@@ -165,7 +174,7 @@ def train_model(model_defs, input_arg, map_cstr=None, chkpt_file='./chkpt'):
         with open(chkpt_file, "wb") as fd:
             pickle.dump(chkpt, fd)
     else:
-        print("\n❌ No valid solutions found in 1000 attempts")
+        print("\n❌ No valid solutions found in 100 attempts")
         exit(1)
 
 def get_cstr_name(mapping_cstr):
