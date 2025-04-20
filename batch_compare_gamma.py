@@ -6,8 +6,8 @@ import time
 from pathlib import Path
 import ast
 
-FULL_RESULTS_FILE = "all_model_comparison_results_full.xlsx"
-COMPACT_RESULTS_FILE = "all_model_comparison_latency_energy.xlsx"
+FULL_RESULTS_FILE = "all_model_comparision_result_full.xlsx"
+COMPACT_RESULTS_FILE = "all_model_comparision_result_latency_energy.xlsx"
 GAMMA_DIR = Path("./src/GAMMA")
 
 model_names = [
@@ -18,7 +18,7 @@ model_names = [
 ]
 # temporarily removed "ALBERT_m", "alexnet",
 
-def run_gamma(command_args, timeout=180):
+def run_gamma(command_args, timeout=300):
     start_time = time.time()
     try:
         result = subprocess.run(
@@ -30,10 +30,10 @@ def run_gamma(command_args, timeout=180):
             timeout=timeout
         )
         exec_time = time.time() - start_time
-        return result.stdout, exec_time
+        return result.stdout, exec_time, result.stderr
     except subprocess.TimeoutExpired:
         print(f"[Timeout] Command timed out: {' '.join(command_args)}")
-        return "[Timeout]", timeout
+        return "[Timeout]", timeout, ""
 
 def parse_metrics(output):
     metrics = {
@@ -62,36 +62,55 @@ for model in model_names:
     print(f"Running for model: {model}")
 
     # Original Gamma
-    orig_out, orig_time = run_gamma([
+    orig_out, orig_time, orig_err = run_gamma([
         "python", "main.py",
         "--fitness1", "latency", "--fitness2", "power",
         "--num_pe", "168", "--l1_size", "512", "--l2_size", "108000",
         "--NocBW", "81920000", "--epochs", "10",
         "--model", model, "--singlelayer", "1"
     ])
+    print("Gamma ran")
     if "[Timeout]" in orig_out:
-        orig_metrics = {"Model": model, "Method": "Original Gamma", "Runtime (cycles)": None, "Energy (nJ)": None, "EDP (cycles·nJ)": None, "L1 Size (elements)": None, "L2 Size (elements)": None, "Mapping": None}
+        orig_metrics = {
+            "Model": model, "Method": "Original Gamma",
+            "Runtime (cycles)": None, "Energy (nJ)": None,
+            "EDP (cycles·nJ)": None, "L1 Size (elements)": None,
+            "L2 Size (elements)": None, "Wall Time (s)": orig_time,
+            "Mapping": None
+        }
     else:
         orig_metrics = parse_metrics(orig_out)
         edp = orig_metrics["Runtime (cycles)"] * orig_metrics["Energy (nJ)"] if orig_metrics["Runtime (cycles)"] and orig_metrics["Energy (nJ)"] else None
-        orig_metrics.update({"Model": model, "Method": "Original Gamma", "EDP (cycles·nJ)": edp})
+        orig_metrics["Model"] = model
+        orig_metrics["Method"] = "Original Gamma"
+        orig_metrics["EDP (cycles·nJ)"] = edp
+        orig_metrics["Wall Time (s)"] = orig_time
 
     # Tabu Search Gamma
-    tabu_out, tabu_time = run_gamma([
+    tabu_out, tabu_time, tabu_err = run_gamma([
         "python", "d_m.py",
         "--fitness1", "latency", "--fitness2", "power",
         "--num_pe", "168", "--l1_size", "512", "--l2_size", "108000",
         "--NocBW", "81920000", "--epochs", "10",
         "--model", model, "--singlelayer", "1", "--log_level", "1"
     ])
-
+    print("Tabu Gamma ran")
     if "No valid solutions found" in tabu_out or "[Timeout]" in tabu_out:
         print(f"[Warning] Tabu Search Gamma failed or timed out for model: {model}")
-        tabu_metrics = {"Model": model, "Method": "Tabu Search Gamma", "Runtime (cycles)": None, "Energy (nJ)": None, "EDP (cycles·nJ)": None, "L1 Size (elements)": None, "L2 Size (elements)": None, "Mapping": None}
+        tabu_metrics = {
+            "Model": model, "Method": "Tabu Search Gamma",
+            "Runtime (cycles)": None, "Energy (nJ)": None,
+            "EDP (cycles·nJ)": None, "L1 Size (elements)": None,
+            "L2 Size (elements)": None, "Wall Time (s)": tabu_time,
+            "Mapping": None
+        }
     else:
         tabu_metrics = parse_metrics(tabu_out)
         edp = tabu_metrics["Runtime (cycles)"] * tabu_metrics["Energy (nJ)"] if tabu_metrics["Runtime (cycles)"] and tabu_metrics["Energy (nJ)"] else None
-        tabu_metrics.update({"Model": model, "Method": "Tabu Search Gamma", "EDP (cycles·nJ)": edp})
+        tabu_metrics["Model"] = model
+        tabu_metrics["Method"] = "Tabu Search Gamma"
+        tabu_metrics["EDP (cycles·nJ)"] = edp
+        tabu_metrics["Wall Time (s)"] = tabu_time
 
     # Append to full results
     full_results.extend([orig_metrics, tabu_metrics])
@@ -102,7 +121,7 @@ for model in model_names:
 
 # Save full dataframe in desired column order
 full_df = pd.DataFrame(full_results)
-full_columns = ["Model", "Method", "Runtime (cycles)", "Energy (nJ)", "EDP (cycles·nJ)", "L1 Size (elements)", "L2 Size (elements)", "Mapping"]
+full_columns = ["Model", "Method", "Runtime (cycles)", "Energy (nJ)", "EDP (cycles·nJ)", "L1 Size (elements)", "L2 Size (elements)", "Wall Time (s)", "Mapping"]
 full_df = full_df[full_columns]
 full_df.to_excel(FULL_RESULTS_FILE, index=False)
 
